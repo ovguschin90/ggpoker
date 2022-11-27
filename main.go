@@ -10,7 +10,7 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	d := deck.Shuffle(deck.New())
+	d := deck.New()
 
 	fmt.Println(d)
 

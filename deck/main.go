@@ -84,9 +84,9 @@ func New() Deck {
 		}
 	}
 
-	return d
+	return shuffle(d)
 }
-func Shuffle(d Deck) Deck {
+func shuffle(d Deck) Deck {
 	for i := 0; i < len(d); i++ {
 		r := rand.Intn(i + 1)
 		if r != i {
