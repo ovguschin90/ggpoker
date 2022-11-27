@@ -2,6 +2,7 @@ package deck
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 )
 
@@ -35,7 +36,11 @@ type Card struct {
 }
 
 func (c Card) String() string {
-	value := strconv.Itoa(c.value)
+	return fmt.Sprintf("%s of %s %s", c.cardName(), c.suit, suitToUnicode(c.suit))
+}
+
+func (c Card) cardName() string {
+	var value string
 	switch c.value {
 	case 1:
 		value = "ACE"
@@ -45,9 +50,10 @@ func (c Card) String() string {
 		value = "QUEEN"
 	case 13:
 		value = "KING"
+	default:
+		value = strconv.Itoa(c.value)
 	}
-
-	return fmt.Sprintf("%s of %s %s", value, c.suit, suitToUnicode(c.suit))
+	return value
 }
 
 func NewCard(s Suit, v int) Card {
@@ -75,6 +81,16 @@ func New() Deck {
 		for j := 0; j < nCards; j++ {
 			d[x] = NewCard(Suit(i), j+1)
 			x++
+		}
+	}
+
+	return d
+}
+func Shuffle(d Deck) Deck {
+	for i := 0; i < len(d); i++ {
+		r := rand.Intn(i + 1)
+		if r != i {
+			d[i], d[r] = d[r], d[i]
 		}
 	}
 

@@ -1,0 +1,10 @@
+{
+    "vim.easymotion": true,
+    "vim.incsearch": true,
+    "vim.useSystemClipboard": true,
+    "vim.useCtrlKeys": true,
+    "vim.hlsearch": true,
+
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000,
+}
