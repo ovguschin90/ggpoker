@@ -7,6 +7,10 @@ import (
 )
 
 func main() {
+	d := deck.New()
+
+	fmt.Println(d)
+	
 	card := deck.NewCard(deck.Spades, 1)
 	fmt.Println(card)
 }

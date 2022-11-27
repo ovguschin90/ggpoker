@@ -1,3 +1,3 @@
-module github.com/ovguschin90/ppgame
+module github.com/ovguschin90/ggpoker
 
 go 1.19
