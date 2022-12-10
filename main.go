@@ -1,15 +1,13 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/ovguschin90/ggpoker/deck"
+	"github.com/ovguschin90/ggpoker/p2p"
 )
 
 func main() {
-	deck := deck.New()
-	fmt.Println(deck)
-
-	deck.Shuffle()
-	fmt.Println(deck)
+	cfg := p2p.Config{
+		ListenAddr: ":3000",
+	}
+	srv := p2p.NewServer(cfg)
+	srv.Start()
 }
