@@ -37,7 +37,7 @@ func (s *Server) Start() {
 		panic(err)
 	}
 
-	fmt.Printf("game server running on port: %s", s.ListenAddr)
+	fmt.Printf("game server running on port: %s \n", s.ListenAddr)
 	s.acceptLoop()
 }
 
@@ -53,6 +53,8 @@ func (s *Server) acceptLoop() {
 		}
 
 		s.addPeer <- peer
+
+		peer.Send([]byte("GGPOKER V0.1-alfa"))
 
 		go s.handleConn(conn)
 	}
@@ -85,7 +87,7 @@ func (s *Server) loop() {
 		select {
 		case peer := <-s.addPeer:
 			s.peers[peer.conn.RemoteAddr()] = peer
-			fmt.Printf("new player connected %s", peer.conn.RemoteAddr())
+			fmt.Printf("new player connected %s\n", peer.conn.RemoteAddr())
 		}
 	}
 }
