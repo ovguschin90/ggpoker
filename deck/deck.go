@@ -2,7 +2,6 @@ package deck
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 )
 
@@ -13,9 +12,9 @@ func (s Suit) String() string {
 	case Spades:
 		return "SPADES"
 	case Hearts:
-		return "HEARTS"
+		return "HEARDS"
 	case Dimonds:
-		return "DIAMONDS"
+		return "DIMONDS"
 	case Clubs:
 		return "CLUBS"
 	default:
@@ -36,11 +35,7 @@ type Card struct {
 }
 
 func (c Card) String() string {
-	return fmt.Sprintf("%s of %s %s", c.cardName(), c.suit, suitToUnicode(c.suit))
-}
-
-func (c Card) cardName() string {
-	var value string
+	value := strconv.Itoa(c.value)
 	switch c.value {
 	case 1:
 		value = "ACE"
@@ -50,17 +45,14 @@ func (c Card) cardName() string {
 		value = "QUEEN"
 	case 13:
 		value = "KING"
-	default:
-		value = strconv.Itoa(c.value)
 	}
-	return value
+	return fmt.Sprintf("%s of %s %s", value, c.suit, suitToUnicode(c.suit))
 }
 
 func NewCard(s Suit, v int) Card {
 	if v > 13 {
 		panic("the value of the card cannot be higher then 13")
 	}
-
 	return Card{
 		suit:  s,
 		value: v,
@@ -73,28 +65,18 @@ func New() Deck {
 	var (
 		nSuits = 4
 		nCards = 13
-		d      = [52]Card{}
+		deck   = [52]Card{}
 	)
 
 	x := 0
 	for i := 0; i < nSuits; i++ {
 		for j := 0; j < nCards; j++ {
-			d[x] = NewCard(Suit(i), j+1)
+			deck[x] = NewCard(Suit(i), j+1)
 			x++
 		}
 	}
 
-	return shuffle(d)
-}
-func shuffle(d Deck) Deck {
-	for i := 0; i < len(d); i++ {
-		r := rand.Intn(i + 1)
-		if r != i {
-			d[i], d[r] = d[r], d[i]
-		}
-	}
-
-	return d
+	return deck
 }
 
 func suitToUnicode(s Suit) string {

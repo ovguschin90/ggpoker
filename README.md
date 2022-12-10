@@ -1,1 +1,1 @@
-# ggpoker
+# Decentralizarted Pocker Game

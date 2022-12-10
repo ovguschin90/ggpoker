@@ -4,5 +4,5 @@ build:
 run: build
 	./bin/ggpoker
 
-test:
+test: 
 	go test -v ./...
