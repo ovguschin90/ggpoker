@@ -9,4 +9,7 @@ import (
 func main() {
 	deck := deck.New()
 	fmt.Println(deck)
+
+	deck.Shuffle()
+	fmt.Println(deck)
 }
