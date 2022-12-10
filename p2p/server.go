@@ -22,6 +22,7 @@ type Server struct {
 	mu       sync.RWMutex
 	peers    map[net.Addr]*Peer
 	addPeer  chan *Peer
+	delPeer  chan *Peer
 	msgChan  chan *Message
 }
 
@@ -31,6 +32,7 @@ func NewServer(cfg Config) *Server {
 		Config:  cfg,
 		peers:   make(map[net.Addr]*Peer),
 		addPeer: make(chan *Peer),
+		delPeer: make(chan *Peer),
 		msgChan: make(chan *Message),
 	}
 }
@@ -53,31 +55,39 @@ func (s *Server) acceptLoop() {
 			panic(err)
 		}
 
-		peer := &Peer{
-			conn: conn,
-		}
-
-		s.addPeer <- peer
-
-		err = peer.Send([]byte("GGPOKER V0.1-alfa"))
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		go s.handleConn(conn)
+		go s.handleConn(peer)
 	}
 }
 
-func (s *Server) handleConn(conn net.Conn) {
+func (s *Server) Connect(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	peer := &Peer{
+		conn: conn,
+	}
+
+	s.addPeer <- peer
+
+	return peer.Send([]byte("GGPOKER V0.1-alfa"))
+}
+
+func (s *Server) handleConn(p *Peer) {
+	defer func() {
+		s.delPeer <- p
+	}()
+
 	buf := make([]byte, 1024)
 	for {
-		n, err := conn.Read(buf)
+		n, err := p.conn.Read(buf)
 		if err != nil {
 			break
 		}
 
 		s.msgChan <- &Message{
-			From:    conn.RemoteAddr(),
+			From:    p.conn.RemoteAddr(),
 			Payload: bytes.NewReader(buf[:n]),
 		}
 	}
@@ -96,6 +106,9 @@ func (s *Server) listen() error {
 func (s *Server) loop() {
 	for { //nolint: gosimple
 		select {
+		case peer := <-s.delPeer:
+			delete(s.peers, peer.conn.RemoteAddr())
+			fmt.Printf("player disconnected %s\n", peer.conn.RemoteAddr())
 		case peer := <-s.addPeer:
 			s.peers[peer.conn.RemoteAddr()] = peer
 			fmt.Printf("new player connected %s\n", peer.conn.RemoteAddr())
