@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"sync"
@@ -16,17 +17,21 @@ type Config struct {
 type Server struct {
 	Config
 
+	handler  Handler
 	listener net.Listener
 	mu       sync.RWMutex
 	peers    map[net.Addr]*Peer
 	addPeer  chan *Peer
+	msgChan  chan *Message
 }
 
 func NewServer(cfg Config) *Server {
 	return &Server{
+		handler: &DefaultHandler{},
 		Config:  cfg,
 		peers:   make(map[net.Addr]*Peer),
 		addPeer: make(chan *Peer),
+		msgChan: make(chan *Message),
 	}
 }
 
@@ -54,7 +59,10 @@ func (s *Server) acceptLoop() {
 
 		s.addPeer <- peer
 
-		peer.Send([]byte("GGPOKER V0.1-alfa"))
+		err = peer.Send([]byte("GGPOKER V0.1-alfa"))
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		go s.handleConn(conn)
 	}
@@ -68,7 +76,10 @@ func (s *Server) handleConn(conn net.Conn) {
 			break
 		}
 
-		fmt.Println(string(buf[:n]))
+		s.msgChan <- &Message{
+			From:    conn.RemoteAddr(),
+			Payload: bytes.NewReader(buf[:n]),
+		}
 	}
 }
 
@@ -83,11 +94,15 @@ func (s *Server) listen() error {
 }
 
 func (s *Server) loop() {
-	for {
+	for { //nolint: gosimple
 		select {
 		case peer := <-s.addPeer:
 			s.peers[peer.conn.RemoteAddr()] = peer
 			fmt.Printf("new player connected %s\n", peer.conn.RemoteAddr())
+		case msg := <-s.msgChan:
+			if err := s.handler.HandleMessage(msg); err != nil {
+				panic(err)
+			}
 		}
 	}
 }
