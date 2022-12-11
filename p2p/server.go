@@ -1,16 +1,16 @@
 package p2p
 
 import (
-	"fmt"
 	"net"
-	"sync"
 
 	"github.com/sirupsen/logrus"
 )
 
+
 type Config struct {
-	ListenAddr string
-	Verion     string
+	ListenAddr  string
+	Version     string
+	GameVariant GameVariant
 }
 
 type Server struct {
@@ -18,7 +18,6 @@ type Server struct {
 
 	handler   Handler
 	transport *TCPTransport
-	mu        sync.RWMutex
 	peers     map[net.Addr]*Peer
 	addPeer   chan *Peer
 	delPeer   chan *Peer
@@ -46,7 +45,10 @@ func NewServer(cfg Config) *Server {
 func (s *Server) Start() {
 	go s.loop()
 
-	fmt.Printf("game server running on port: %s \n", s.ListenAddr)
+	logrus.WithFields(logrus.Fields{
+		"port": s.ListenAddr,
+		"type": s.GameVariant,
+	}).Info("started new game server")
 
 	s.transport.ListenAndAccept()
 }
@@ -75,6 +77,8 @@ func (s *Server) loop() {
 			}).Info("new player disconnected")
 			delete(s.peers, peer.conn.RemoteAddr())
 		case peer := <-s.addPeer:
+			// TODO:check max plaers and other game state logic
+			go peer.ReadLoop(s.msgChan)
 			logrus.WithFields(logrus.Fields{
 				"addr": peer.conn.RemoteAddr(),
 			}).Info("new player connected")
