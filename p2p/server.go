@@ -1,11 +1,11 @@
 package p2p
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/sirupsen/logrus"
 )
-
 
 type Config struct {
 	ListenAddr  string
@@ -16,7 +16,6 @@ type Config struct {
 type Server struct {
 	Config
 
-	handler   Handler
 	transport *TCPTransport
 	peers     map[net.Addr]*Peer
 	addPeer   chan *Peer
@@ -26,7 +25,6 @@ type Server struct {
 
 func NewServer(cfg Config) *Server {
 	s := &Server{
-		handler: &DefaultHandler{},
 		Config:  cfg,
 		peers:   make(map[net.Addr]*Peer),
 		addPeer: make(chan *Peer),
@@ -53,6 +51,15 @@ func (s *Server) Start() {
 	s.transport.ListenAndAccept()
 }
 
+func (s *Server) SendHandshake(p *Peer) error {
+	msg, err := Encode(s, p)
+	if err != nil {
+		return err
+	}
+
+	return p.Send(msg)
+}
+
 func (s *Server) Connect(addr string) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -77,16 +84,47 @@ func (s *Server) loop() {
 			}).Info("new player disconnected")
 			delete(s.peers, peer.conn.RemoteAddr())
 		case peer := <-s.addPeer:
-			// TODO:check max plaers and other game state logic
+			go s.SendHandshake(peer)
+
+			if err := s.handshake(peer); err != nil {
+				logrus.Error("handshake failed: ", err)
+				continue
+			}
+
+			//TODO: check max players and other game state logic
 			go peer.ReadLoop(s.msgChan)
+
 			logrus.WithFields(logrus.Fields{
 				"addr": peer.conn.RemoteAddr(),
 			}).Info("new player connected")
+
 			s.peers[peer.conn.RemoteAddr()] = peer
 		case msg := <-s.msgChan:
-			if err := s.handler.HandleMessage(msg); err != nil {
+			if err := s.handleMessage(msg); err != nil {
 				panic(err)
 			}
 		}
 	}
+}
+
+func (s *Server) handshake(p *Peer) error {
+	hs, err := Decode(p)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("hs =>  %+v\n", hs)
+	logrus.WithFields(logrus.Fields{
+		"peer":    p.conn.RemoteAddr(),
+		"version": hs.Version,
+		"variant": hs.GameVariant,
+	}).Info("recieved handshake")
+
+	return nil
+}
+
+func (s *Server) handleMessage(msg *Message) error {
+	fmt.Printf("%+v\n", msg)
+	return nil
 }
